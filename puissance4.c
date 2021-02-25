@@ -271,46 +271,7 @@ FinDePartie testFin( Etat * etat ) {
 
 	// TODO...
 	
-	/* par exemple	*/
-	
-	// tester si un joueur a gagné
-	//Version morpion
-	/*int i,j,k,n = 0;
-	for ( i=0;i < 3; i++) {
-		for(j=0; j < 3; j++) {
-			if ( etat->plateau[i][j] != ' ') {
-				n++;	// nb coups joués
-			
-				// lignes
-				k=0;
-				while ( k < 3 && i+k < 3 && etat->plateau[i+k][j] == etat->plateau[i][j] ) 
-					k++;
-				if ( k == 3 ) 
-					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
-
-				// colonnes
-				k=0;
-				while ( k < 3 && j+k < 3 && etat->plateau[i][j+k] == etat->plateau[i][j] ) 
-					k++;
-				if ( k == 3 ) 
-					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
-
-				// diagonales
-				k=0;
-				while ( k < 3 && i+k < 3 && j+k < 3 && etat->plateau[i+k][j+k] == etat->plateau[i][j] ) 
-					k++;
-				if ( k == 3 ) 
-					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
-
-				k=0;
-				while ( k < 3 && i+k < 3 && j-k >= 0 && etat->plateau[i+k][j-k] == etat->plateau[i][j] ) 
-					k++;
-				if ( k == 3 ) 
-					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;		
-			}
-		}
-	}*/
-
+	/* Pour puissance 4*/
 	int i,j,k,nbCoup = 0;
 	for ( i=0;i < HAUTEUR_GRILLE; i++) {
 		for(j=0; j < LARGEUR_GRILLE; j++) {
@@ -394,17 +355,32 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	
 	/*  TODO :
 		- supprimer la sélection aléatoire du meilleur coup ci-dessus
-		- implémenter l'algorithme MCTS-UCT pour déterminer le meilleur coup ci-dessous
+		- implémenter l'algorithme MCTS-UCT pour déterminer le meilleur coup ci-dessous*/
 
 	int iter = 0;
 	
 	do {
-	
-	
-	
-		// à compléter par l'algorithme MCTS-UCT... 
-	
-	
+		int indexNoeudMaxUCB;
+		float maxUCB,currentUCB = 0;
+		for(int i = 0 ; i < racine->nb_enfants;i++){
+			//Si on a jamais visité ce noeud on le prend
+			if(racine->enfants[i]->nb_simus == 0){
+				indexNoeudMaxUCB = i;
+				break;
+			}else{
+				//Sinon on calcule la valeur UCB du noeud
+				currentUCB = (racine->enfants[i]->nb_victoires/racine->enfants[i]->nb_simus)+1.4*sqrt(log(k)/racine->enfants[i]->nb_simus);
+				if(maxUCB < currentUCB){
+					maxUCB = currentUCB;
+					indexNoeudMaxUCB = i;
+				}
+				
+			}
+		}
+
+
+
+		
 	
 	
 		toc = clock(); 
@@ -412,7 +388,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 		iter ++;
 	} while ( temps < tempsmax );
 	
-	/* fin de l'algorithme  */ 
+	/* fin de l'algorithme  */
 	
 	// Jouer le meilleur premier coup
 	jouerCoup(etat, meilleur_coup );
