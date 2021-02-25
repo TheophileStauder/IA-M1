@@ -145,8 +145,8 @@ int jouerCoup( Etat * etat, Coup * coup ) {
 	else {
 		//etat->plateau[coup->ligne][coup->colonne] = etat->joueur ? 'O' : 'X';
 		
-		//On part du haut de la colonne choisi ( la colonne  de numéro coup->colonne) et on va augmenter le numéro de la ligne en faisant ligne ++ , o
-		//O part donc de la ligne 0 (haut de la grille) et on descend jusqu'a atteindre au max 6
+		//On part du haut de la colonne choisi ( la colonne  de numéro coup->colonne) et on va augmenter le numéro de la ligne en faisant ligne ++ , 
+		//On part donc de la ligne 0 (haut de la grille) et on descend jusqu'a atteindre au max 6
 		//une fois qu'on a trouvé le numéro de la ligne on place le coup joué
 		int ligne = 0;
 		while(etat->plateau[ligne][coup->colonne] == ' '){
@@ -173,16 +173,17 @@ Coup ** coups_possibles( Etat * etat ) {
 	// TODO: à compléter
 	
 	/* par exemple */
-	int i,j;
+	int i;
 	for(i=0; i < LARGEUR_GRILLE; i++) {
 		/*for (j=0; j < HAUTEUR_GRILLE; j++) {
 			if ( etat->plateau[i][j] == ' ' ) {
-				coups[k] = nouveauCoup(j); 
+				coups[k] = nouveauCoup(i,j); 
 				k++;
 			}
 		}*/
+		//Au puissance 4 un coup est possible quand la haut de la grille est libre sur uen colonne
 		if ( etat->plateau[0][i] == ' ' ) {
-				coups[k] = nouveauCoup(j); 
+				coups[k] = nouveauCoup(i); 
 				k++;
 		}
 	}
@@ -339,6 +340,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	Noeud * enfant;
 	while ( coups[k] != NULL) {
 		enfant = ajouterEnfant(racine, coups[k]);
+		printf("Coup %d : %d\n", k, coups[k]->colonne);
 		k++;
 	}
 	
