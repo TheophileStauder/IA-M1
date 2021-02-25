@@ -274,7 +274,8 @@ FinDePartie testFin( Etat * etat ) {
 	/* par exemple	*/
 	
 	// tester si un joueur a gagné
-	int i,j,k,n = 0;
+	//Version morpion
+	/*int i,j,k,n = 0;
 	for ( i=0;i < 3; i++) {
 		for(j=0; j < 3; j++) {
 			if ( etat->plateau[i][j] != ' ') {
@@ -308,10 +309,54 @@ FinDePartie testFin( Etat * etat ) {
 					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;		
 			}
 		}
+	}*/
+
+	int i,j,k,nbCoup = 0;
+	for ( i=0;i < HAUTEUR_GRILLE; i++) {
+		for(j=0; j < LARGEUR_GRILLE; j++) {
+			if ( etat->plateau[i][j] != ' ') {
+				nbCoup++;	// nb coups joués
+			
+				// colonnes
+				k=0;
+				while ( k < 4 && i+k < HAUTEUR_GRILLE && etat->plateau[i+k][j] == etat->plateau[i][j] ) 
+					k++;
+				if ( k == 4 ){
+					//printf("GAGNE EN VERTICALE\n");
+					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
+				}
+
+				// lignes
+				k=0;
+				while ( k < 4 && j+k < LARGEUR_GRILLE && etat->plateau[i][j+k] == etat->plateau[i][j] ) 
+					k++;
+				if ( k == 4 ){
+					//printf("GAGNE EN HORIZONTALE\n");
+					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
+				}
+
+				// diagonales
+				k=0;
+				while ( k < 4 && i+k < HAUTEUR_GRILLE && j+k < LARGEUR_GRILLE && etat->plateau[i+k][j+k] == etat->plateau[i][j] ) 
+					k++;
+				if ( k == 4){
+					//printf("GAGNE EN DIAGONALE DROITE\n");
+					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
+				}
+
+				k=0;
+				while ( k < 4 && i+k < HAUTEUR_GRILLE && j-k >= 0 && etat->plateau[i+k][j-k] == etat->plateau[i][j] ) 
+					k++;
+				if ( k == 4 ){
+					//printf("GAGNE EN DIAGONALE GAUCHE\n");
+					return etat->plateau[i][j] == 'O'? ORDI_GAGNE : HUMAIN_GAGNE;
+				}
+			}
+		}
 	}
 
 	// et sinon tester le match nul	
-	if ( n == LARGEUR_GRILLE*HAUTEUR_GRILLE ) 
+	if ( nbCoup == LARGEUR_GRILLE*HAUTEUR_GRILLE ) 
 		return MATCHNUL;
 		
 	return NON;
@@ -340,7 +385,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	Noeud * enfant;
 	while ( coups[k] != NULL) {
 		enfant = ajouterEnfant(racine, coups[k]);
-		printf("Coup %d : %d\n", k, coups[k]->colonne);
+		//printf("Coup %d : %d\n", k, coups[k]->colonne);  //DEBUG
 		k++;
 	}
 	
