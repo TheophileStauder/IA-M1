@@ -428,7 +428,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 			}
 			noeud_depart->nb_simus++;
 			noeud_depart = noeud_depart->parent;
-			;
+			
 		}
 		printf("SORTIE\n");
 		toc = clock(); 
@@ -437,6 +437,9 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 
 	} while (temps < tempsmax);
 	
+	for(int i =0 ; i < racine->nb_enfants;i++){
+		printf("UCB enfant %d = %f \n",i,(float)racine->enfants[i]->nb_victoires/racine->enfants[i]->nb_simus);
+	}
 	/* fin de l'algorithme  */
 	printf("iter %d\n",iter );
 	// Jouer le meilleur premier coup
