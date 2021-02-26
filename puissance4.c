@@ -11,7 +11,7 @@
 #include <time.h>
 
 // Paramètres du jeu
-#define LARGEUR_MAX 9 		// nb max de fils pour un noeud (= nb max de coups possibles)
+#define LARGEUR_MAX 7 		// nb max de fils pour un noeud (= nb max de coups possibles)
 
 #define TEMPS 5		// temps de calcul pour un coup avec MCTS (en secondes)
 
@@ -353,20 +353,19 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	}
 	
 	
-	meilleur_coup = coups[ rand()%k ]; // choix aléatoire
-	
-	/*  TODO :
-		- supprimer la sélection aléatoire du meilleur coup ci-dessus
-		- implémenter l'algorithme MCTS-UCT pour déterminer le meilleur coup ci-dessous*/
 
 	int iter = 0;
 	
 	do {
+
+		current = racine; 
+
 		int indexNoeudMaxUCB;
 		float maxUCB,currentUCB = 0;
 		int noeud_pas_visite = 0;
-		//current = racine;
-		/*Selectionner le bon noeud*/
+		
+		/* 1. Selectionner le bon noeud*/
+		printf("STEP 1\n");
 		//Tant que on trouve pas un noeud pas developpé on descend dans l'arbre en maximisant la valeur UCB
 		while (current->nb_enfants != 0 && !noeud_pas_visite){
 			for(int i = 0 ; i < current->nb_enfants;i++){
@@ -376,13 +375,13 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 					noeud_pas_visite = 1;
 					break;
 				}else{
-					printf("HELLO\n");
 					//Sinon on calcule la valeur UCB du noeud
 					currentUCB = (current->enfants[i]->nb_victoires/current->enfants[i]->nb_simus)+1.4*sqrt(log(current->nb_simus)/current->enfants[i]->nb_simus);
 					if(maxUCB < currentUCB){
 						maxUCB = currentUCB;
 						indexNoeudMaxUCB = i;
 					}
+					//printf("i = %d et currentNB_CHILD = %d\n",i,current->nb_enfants);		//DEBUG
 				
 				}	
 			}
@@ -390,38 +389,44 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 		}
 		
 		noeud_depart = current;
+		noeud_depart->etat = copieEtat(current->etat);
 
-		/*Developper le noeud choisi*/
+		
+		/* 2. Developper le noeud choisi*/
+		printf("STEP 2\n");
 		coups = coups_possibles(current->etat); 
 		k = 0;
 		while ( coups[k] != NULL) {
 			enfant = ajouterEnfant(current, coups[k]);
 			k++;
 		}
+		
 
-
-		/*Marche aléatoire depuis le noeud courant*/
-
+		/* 3. Marche aléatoire depuis le noeud courant*/
+		printf("STEP 3\n");
 		Coup * coup_aleatoire;
+		Noeud * noeud_pour_marche = nouveauNoeud(NULL,NULL);
+		noeud_pour_marche->etat = copieEtat(noeud_depart->etat);
 		FinDePartie test_fin = NON;
 		while(test_fin == NON){
-			coups = coups_possibles(current->etat);
+			coups = coups_possibles(noeud_pour_marche->etat);
 			k = 0;
 			while ( coups[k] != NULL) {
 				k++;
 			}
-			printf("k = %d\n", k);
+			//printf("k = %d\n", k);		//DEBUG
 			if(k == 0){break;}
 			coup_aleatoire = coups[ rand()%k ];
 
-			printf("LAAA\n");
-			current = ajouterEnfant(current,coup_aleatoire);
-			test_fin = testFin(current->etat);
-			printf("COUCOU\n");
+			noeud_pour_marche = ajouterEnfant(noeud_pour_marche,coup_aleatoire);
+			test_fin = testFin(noeud_pour_marche->etat);
 			
 		}
+		freeNoeud(noeud_pour_marche);
 
-		/*Mettre à jour les valeurs de noeuds*/
+
+		/* 4. Mettre à jour les valeurs de noeuds*/
+		printf("STEP 4\n");
 		while(noeud_depart != racine){
 			if(test_fin==2){
 				noeud_depart->nb_victoires++;
@@ -430,21 +435,36 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 			noeud_depart = noeud_depart->parent;
 			
 		}
-		printf("SORTIE\n");
+		printf("FIN ALGO\n");			//DEBUG
+		//printf("iter %d\n",iter );	//DEBUG
 		toc = clock(); 
 		temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
 		iter ++;
-
+		//)
 	} while (temps < tempsmax);
 	
+	int index_best_WR = 0;
+	float best_WR,WR = 0.0f;
+
+
+	/*Choix du coup à jouer*/
 	for(int i =0 ; i < racine->nb_enfants;i++){
-		printf("UCB enfant %d = %f \n",i,(float)racine->enfants[i]->nb_victoires/racine->enfants[i]->nb_simus);
+		printf("WIN RATE enfant %d = %f \n",i,(float)racine->enfants[i]->nb_victoires/racine->enfants[i]->nb_simus);
+		WR = (float)racine->enfants[i]->nb_victoires/racine->enfants[i]->nb_simus;
+		if(best_WR < WR){
+			index_best_WR = i;
+			best_WR = WR;
+		}
 	}
-	/* fin de l'algorithme  */
-	printf("iter %d\n",iter );
-	// Jouer le meilleur premier coup
-	jouerCoup(etat, meilleur_coup );
+
+	printf("ORDINATEUR joue la colonne %d avec %f de winrate\n",index_best_WR,best_WR );
 	
+	coups = coups_possibles(racine->etat); 
+	// Jouer le meilleur premier coup
+	jouerCoup(etat, coups[ index_best_WR]); 
+
+	/* fin de l'algorithme  */
+
 	// Penser à libérer la mémoire :
 	freeNoeud(racine);
 	free (coups);
