@@ -337,15 +337,17 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	Coup * meilleur_coup ;
 	
 	// Créer l'arbre de recherche
-	Noeud * racine = nouveauNoeud(NULL, NULL);	
+
+	Noeud * racine = nouveauNoeud(NULL, NULL);
 	racine->etat = copieEtat(etat); 
-	
+	Noeud * current = racine; 
+	Noeud * noeud_depart;
 	// créer les premiers noeuds:
-	coups = coups_possibles(racine->etat); 
+	coups = coups_possibles(current->etat); 
 	int k = 0;
 	Noeud * enfant;
 	while ( coups[k] != NULL) {
-		enfant = ajouterEnfant(racine, coups[k]);
+		enfant = ajouterEnfant(current, coups[k]);
 		//printf("Coup %d : %d\n", k, coups[k]->colonne);  //DEBUG
 		k++;
 	}
@@ -362,45 +364,72 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	do {
 		int indexNoeudMaxUCB;
 		float maxUCB,currentUCB = 0;
-		for(int i = 0 ; i < racine->nb_enfants;i++){
-			//Si on a jamais visité ce noeud on le prend
-			if(racine->enfants[i]->nb_simus == 0){
-				indexNoeudMaxUCB = i;
-				break;
-			}else{
-				printf("HELLO\n");
-				//Sinon on calcule la valeur UCB du noeud
-				currentUCB = (racine->enfants[i]->nb_victoires/racine->enfants[i]->nb_simus)+1.4*sqrt(log(k)/racine->enfants[i]->nb_simus);
-				if(maxUCB < currentUCB){
-					maxUCB = currentUCB;
+		int noeud_pas_visite = 0;
+		//current = racine;
+		/*Selectionner le bon noeud*/
+		//Tant que on trouve pas un noeud pas developpé on descend dans l'arbre en maximisant la valeur UCB
+		while (current->nb_enfants != 0 && !noeud_pas_visite){
+			for(int i = 0 ; i < current->nb_enfants;i++){
+				//Si on a jamais visité ce noeud on le prend
+				if(current->enfants[i]->nb_simus == 0){
 					indexNoeudMaxUCB = i;
-				}
+					noeud_pas_visite = 1;
+					break;
+				}else{
+					printf("HELLO\n");
+					//Sinon on calcule la valeur UCB du noeud
+					currentUCB = (current->enfants[i]->nb_victoires/current->enfants[i]->nb_simus)+1.4*sqrt(log(current->nb_simus)/current->enfants[i]->nb_simus);
+					if(maxUCB < currentUCB){
+						maxUCB = currentUCB;
+						indexNoeudMaxUCB = i;
+					}
 				
+				}	
 			}
+			current = current->enfants[indexNoeudMaxUCB];
 		}
-		//printf("UCB %d\n",indexNoeudMaxUCB );		//DEBUG
+		
+		noeud_depart = current;
 
-		//On effectue une marche aléatoire depuis ce noeud 
-		Noeud * current;
-		current = racine->enfants[indexNoeudMaxUCB];
+		/*Developper le noeud choisi*/
+		coups = coups_possibles(current->etat); 
+		k = 0;
+		while ( coups[k] != NULL) {
+			enfant = ajouterEnfant(current, coups[k]);
+			k++;
+		}
+
+
+		/*Marche aléatoire depuis le noeud courant*/
+
 		Coup * coup_aleatoire;
 		FinDePartie test_fin = NON;
-		//MARCHE ALEATOIRE
 		while(test_fin == NON){
 			coups = coups_possibles(current->etat);
 			k = 0;
 			while ( coups[k] != NULL) {
 				k++;
 			}
-
+			printf("k = %d\n", k);
+			if(k == 0){break;}
 			coup_aleatoire = coups[ rand()%k ];
-			enfant = ajouterEnfant(current,coup_aleatoire);
-			current = enfant;
+
+			printf("LAAA\n");
+			current = ajouterEnfant(current,coup_aleatoire);
 			test_fin = testFin(current->etat);
 			printf("COUCOU\n");
 			
 		}
-		printf("%d\n", test_fin);
+
+		/*Mettre à jour les valeurs de noeuds*/
+		while(noeud_depart != racine){
+			if(test_fin==2){
+				noeud_depart->nb_victoires++;
+			}
+			noeud_depart->nb_simus++;
+			noeud_depart = noeud_depart->parent;
+			;
+		}
 		printf("SORTIE\n");
 		toc = clock(); 
 		temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
@@ -409,7 +438,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 	} while (temps < tempsmax);
 	
 	/* fin de l'algorithme  */
-	
+	printf("iter %d\n",iter );
 	// Jouer le meilleur premier coup
 	jouerCoup(etat, meilleur_coup );
 	
