@@ -13,7 +13,7 @@
 // Paramètres du jeu
 #define LARGEUR_MAX 7 		// nb max de fils pour un noeud (= nb max de coups possibles)
 
-#define TEMPS 5		// temps de calcul pour un coup avec MCTS (en secondes)
+#define TEMPS 10		// temps de calcul pour un coup avec MCTS (en secondes)
 
 // macros
 #define AUTRE_JOUEUR(i) (1-(i))
@@ -365,16 +365,20 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 		int noeud_pas_visite = 0;
 		
 		/* 1. Selectionner le bon noeud*/
-		printf("STEP 1\n");
+		//printf("STEP 1\n");
 		//Tant que on trouve pas un noeud pas developpé on descend dans l'arbre en maximisant la valeur UCB
-		while (current->nb_enfants != 0 && !noeud_pas_visite){
+		while (current && current->nb_enfants != 0 && !noeud_pas_visite){
+			//printf("SEG FAULT 0\n");
 			for(int i = 0 ; i < current->nb_enfants;i++){
 				//Si on a jamais visité ce noeud on le prend
+				//printf("SEG FAULT 1\n");
 				if(current->enfants[i]->nb_simus == 0){
+					
 					indexNoeudMaxUCB = i;
 					noeud_pas_visite = 1;
 					break;
 				}else{
+					
 					//Sinon on calcule la valeur UCB du noeud
 					currentUCB = (current->enfants[i]->nb_victoires/current->enfants[i]->nb_simus)+1.4*sqrt(log(current->nb_simus)/current->enfants[i]->nb_simus);
 					if(maxUCB < currentUCB){
@@ -385,57 +389,60 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 				
 				}	
 			}
+			//printf("SEG FAULT 5\n");
 			current = current->enfants[indexNoeudMaxUCB];
+			//printf("SEG FAULT 7\n");
 		}
 		
 		noeud_depart = current;
-		noeud_depart->etat = copieEtat(current->etat);
-
 		
-		/* 2. Developper le noeud choisi*/
-		printf("STEP 2\n");
-		coups = coups_possibles(current->etat); 
-		k = 0;
-		while ( coups[k] != NULL) {
-			enfant = ajouterEnfant(current, coups[k]);
-			k++;
-		}
 		
-
-		/* 3. Marche aléatoire depuis le noeud courant*/
-		printf("STEP 3\n");
-		Coup * coup_aleatoire;
-		Noeud * noeud_pour_marche = nouveauNoeud(NULL,NULL);
-		noeud_pour_marche->etat = copieEtat(noeud_depart->etat);
-		FinDePartie test_fin = NON;
-		while(test_fin == NON){
-			coups = coups_possibles(noeud_pour_marche->etat);
+		if(current){
+			/* 2. Developper le noeud choisi*/
+			//printf("STEP 2\n");
+			coups = coups_possibles(current->etat); 
 			k = 0;
 			while ( coups[k] != NULL) {
+				enfant = ajouterEnfant(current, coups[k]);
 				k++;
 			}
-			//printf("k = %d\n", k);		//DEBUG
-			if(k == 0){break;}
-			coup_aleatoire = coups[ rand()%k ];
-
-			noeud_pour_marche = ajouterEnfant(noeud_pour_marche,coup_aleatoire);
-			test_fin = testFin(noeud_pour_marche->etat);
 			
-		}
-		freeNoeud(noeud_pour_marche);
 
+			/* 3. Marche aléatoire depuis le noeud courant*/
+			//printf("STEP 3\n");
+			Coup * coup_aleatoire;
+			Noeud * noeud_pour_marche = nouveauNoeud(NULL,NULL);
+			noeud_pour_marche->etat = copieEtat(noeud_depart->etat);
+			FinDePartie test_fin = NON;
+			while(test_fin == NON){
+				coups = coups_possibles(noeud_pour_marche->etat);
+				k = 0;
+				while ( coups[k] != NULL) {
+					k++;
+				}
+				//printf("k = %d\n", k);		//DEBUG
+				if(k == 0){break;}
+				coup_aleatoire = coups[ rand()%k ];
 
-		/* 4. Mettre à jour les valeurs de noeuds*/
-		printf("STEP 4\n");
-		while(noeud_depart != racine){
-			if(test_fin==2){
-				noeud_depart->nb_victoires++;
+				noeud_pour_marche = ajouterEnfant(noeud_pour_marche,coup_aleatoire);
+				test_fin = testFin(noeud_pour_marche->etat);
+				
 			}
-			noeud_depart->nb_simus++;
-			noeud_depart = noeud_depart->parent;
-			
+			freeNoeud(noeud_pour_marche);
+
+
+			/* 4. Mettre à jour les valeurs de noeuds*/
+			//printf("STEP 4\n");
+			while(noeud_depart != racine){
+				if(test_fin==2){
+					noeud_depart->nb_victoires++;
+				}
+				noeud_depart->nb_simus++;
+				noeud_depart = noeud_depart->parent;
+				
+			}
 		}
-		printf("FIN ALGO\n");			//DEBUG
+		//printf("FIN ALGO\n");			//DEBUG
 		//printf("iter %d\n",iter );	//DEBUG
 		toc = clock(); 
 		temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
