@@ -368,6 +368,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 				indexNoeudMaxUCB = i;
 				break;
 			}else{
+				printf("HELLO\n");
 				//Sinon on calcule la valeur UCB du noeud
 				currentUCB = (racine->enfants[i]->nb_victoires/racine->enfants[i]->nb_simus)+1.4*sqrt(log(k)/racine->enfants[i]->nb_simus);
 				if(maxUCB < currentUCB){
@@ -377,16 +378,35 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 				
 			}
 		}
+		//printf("UCB %d\n",indexNoeudMaxUCB );		//DEBUG
 
+		//On effectue une marche aléatoire depuis ce noeud 
+		Noeud * current;
+		current = racine->enfants[indexNoeudMaxUCB];
+		Coup * coup_aleatoire;
+		FinDePartie test_fin = NON;
+		//MARCHE ALEATOIRE
+		while(test_fin == NON){
+			coups = coups_possibles(current->etat);
+			k = 0;
+			while ( coups[k] != NULL) {
+				k++;
+			}
 
-
-		
-	
-	
+			coup_aleatoire = coups[ rand()%k ];
+			enfant = ajouterEnfant(current,coup_aleatoire);
+			current = enfant;
+			test_fin = testFin(current->etat);
+			printf("COUCOU\n");
+			
+		}
+		printf("%d\n", test_fin);
+		printf("SORTIE\n");
 		toc = clock(); 
 		temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
 		iter ++;
-	} while ( temps < tempsmax );
+
+	} while (temps < tempsmax);
 	
 	/* fin de l'algorithme  */
 	
