@@ -13,7 +13,7 @@
 // Paramètres du jeu
 #define LARGEUR_MAX 7 		// nb max de fils pour un noeud (= nb max de coups possibles)
 
-#define TEMPS 10		// temps de calcul pour un coup avec MCTS (en secondes)
+#define TEMPS 10// temps de calcul pour un coup avec MCTS (en secondes)
 
 // macros
 #define AUTRE_JOUEUR(i) (1-(i))
@@ -350,12 +350,21 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 		enfant = ajouterEnfant(current, coups[k]);
 		//printf("Coup %d : %d\n", k, coups[k]->colonne);  //DEBUG
 		k++;
+		//Si la partie est gagnable on joue ce coup et on sort directement de la fonction
+		
 	}
 	
+	//Verification d'un choix gagnant qui ferait gagner du temps
+	for(int i = 0 ; i < current->nb_enfants; i++){
+		if(testFin(current->enfants[i]->etat) == 2){
+			printf("ORDINATEUR joue le fils %d (choix gagnant)\n",i );
+			jouerCoup(etat,coups[i]);
+			return;
+		}
+	}
 	
 
 	int iter = 0;
-	
 	do {
 
 		current = racine; 
@@ -366,9 +375,11 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 		
 		/* 1. Selectionner le bon noeud*/
 		//Tant que on trouve pas un noeud pas developpé on descend dans l'arbre en maximisant la valeur UCB
+		
 		while (current && current->nb_enfants != 0 && !noeud_pas_visite){
-			//printf("SEG FAULT 0\n");
+			
 			for(int i = 0 ; i < current->nb_enfants;i++){
+				//printf("i = %d\n",i);
 				//Si on a jamais visité ce noeud on le prend
 				if(current->enfants[i]->nb_simus == 0){
 					
@@ -378,7 +389,7 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 				}else{
 					
 					//Sinon on calcule la valeur UCB du noeud
-					currentUCB = (current->enfants[i]->nb_victoires/current->enfants[i]->nb_simus)+1.4*sqrt(log(current->nb_simus)/current->enfants[i]->nb_simus);
+					currentUCB = (current->enfants[i]->nb_victoires/current->enfants[i]->nb_simus)+sqrt(2)*sqrt(log(current->nb_simus)/current->enfants[i]->nb_simus);
 					if(maxUCB < currentUCB){
 						maxUCB = currentUCB;
 						indexNoeudMaxUCB = i;
@@ -390,10 +401,11 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 			current = current->enfants[indexNoeudMaxUCB];
 		}
 		
-		noeud_depart = current;
+		
 		
 		
 		if(current){
+			noeud_depart = current;
 			/* 2. Developper le noeud choisi*/
 			//printf("STEP 2\n");
 			coups = coups_possibles(current->etat); 
@@ -427,42 +439,45 @@ void ordijoue_mcts(Etat * etat, int tempsmax) {
 
 
 			/* 4. Mettre à jour les valeurs de noeuds*/
-			while(noeud_depart != racine){
+			while(noeud_depart && noeud_depart != racine){
 				if(test_fin==2){
 					noeud_depart->nb_victoires++;
 				}
-				noeud_depart->nb_simus++;
-				noeud_depart = noeud_depart->parent;
+				if(noeud_depart){
+					noeud_depart->nb_simus++;
+					noeud_depart = noeud_depart->parent;
+				}
+				
 				
 			}
 		}
 		//printf("FIN ALGO\n");			//DEBUG
-		//printf("iter %d\n",iter );	//DEBUG
+		
 		toc = clock(); 
 		temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
 		iter ++;
 		
 	} while (temps < tempsmax);
 	
-	int index_best_WR = 0;
-	float best_WR,WR = 0.0f;
+	int index_best_WR_max,index_best_WR_robuste = 0;
+	float best_WR_max,WR_max = 0.0f;
 
-
+	printf("Nombre iterations  %d\n",iter );	//DEBUG
 	/*Choix du coup à jouer*/
 	for(int i =0 ; i < racine->nb_enfants;i++){
-		printf("WIN RATE enfant %d = %f \n",i,(float)racine->enfants[i]->nb_victoires/racine->enfants[i]->nb_simus);
-		WR = (float)racine->enfants[i]->nb_victoires/racine->enfants[i]->nb_simus;
-		if(best_WR < WR){
-			index_best_WR = i;
-			best_WR = WR;
+		printf("WIN RATE fils %d = %f \n",i,(float)racine->enfants[i]->nb_victoires/racine->enfants[i]->nb_simus);
+		WR_max = (float)racine->enfants[i]->nb_victoires/racine->enfants[i]->nb_simus;
+		if(best_WR_max < WR_max){
+			index_best_WR_max = i;
+			best_WR_max = WR_max;
 		}
+
 	}
 
-	printf("ORDINATEUR joue la colonne %d avec %f de winrate\n",index_best_WR,best_WR );
-	
+	printf("ORDINATEUR joue le fils max  %d avec %f de winrate\n",index_best_WR_max,best_WR_max );
 	coups = coups_possibles(racine->etat); 
 	// Jouer le meilleur premier coup
-	jouerCoup(etat, coups[ index_best_WR]); 
+	jouerCoup(etat, coups[ index_best_WR_max]); 
 
 	/* fin de l'algorithme  */
 
